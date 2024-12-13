@@ -14,8 +14,6 @@
 
 use wasm_bindgen::prelude::*;
 
-const BUFFER_DEPTH: usize = 4;
-
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub struct Body {
@@ -78,45 +76,41 @@ pub enum StepMethod {
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct BodySystem {
-    bodies: [Vec<Body>; BUFFER_DEPTH],
-    forces: [Vec<[f32; 3]>; BUFFER_DEPTH],
+    bodies: Vec<Body>,
+}
+
+fn get_forces(bodies: &[Body], force_buf: &mut [[f32; 3]], method: ForceMethod) {
+    match method {
+        ForceMethod::Naive => get_forces_naive(bodies, force_buf),
+    };
+}
+
+fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f32; 3]]) {
+    let num_bodies = bodies.len();
+    for body1_idx in 0..num_bodies {
+        for body2_idx in body1_idx + 1..num_bodies {
+            let force_comp = bodies[body1_idx].gravity_force(&bodies[body2_idx]);
+
+            for dim_idx in 0..3 {
+                force_buf[body1_idx][dim_idx] += force_comp[dim_idx];
+                force_buf[body2_idx][dim_idx] -= force_comp[dim_idx];
+            }
+        }
+    }
 }
 
 impl BodySystem {
     fn step_bodies_euler(&mut self, timestep: f32, force_method: ForceMethod) {
-        self.forces[0].fill([0f32; 3]);
-        self.get_forces(0, force_method);
+        let mut force_buf = vec![[0f32; 3]; self.bodies.len()];
+        get_forces(&self.bodies[..], &mut force_buf[..], force_method);
 
-        for body_idx in 0..self.bodies[0].len() {
+        for body_idx in 0..self.bodies.len() {
             for dim_idx in 0..3 {
-                self.bodies[0][body_idx].pos[dim_idx] +=
-                    timestep * self.bodies[0][body_idx].vel[dim_idx];
+                self.bodies[body_idx].pos[dim_idx] += timestep * self.bodies[body_idx].vel[dim_idx];
             }
 
             for dim_idx in 0..3 {
-                self.bodies[0][body_idx].vel[dim_idx] +=
-                    timestep * self.forces[0][body_idx][dim_idx];
-            }
-        }
-    }
-
-    fn get_forces(&mut self, buf_ind: usize, method: ForceMethod) {
-        match method {
-            ForceMethod::Naive => self.get_forces_naive(buf_ind),
-        };
-    }
-
-    fn get_forces_naive(&mut self, buf_ind: usize) {
-        let num_bodies = self.bodies[0].len();
-        for body1_idx in 0..num_bodies {
-            for body2_idx in body1_idx + 1..num_bodies {
-                let force_comp =
-                    self.bodies[buf_ind][body1_idx].gravity_force(&self.bodies[buf_ind][body2_idx]);
-
-                for dim_idx in 0..3 {
-                    self.forces[buf_ind][body1_idx][dim_idx] += force_comp[dim_idx];
-                    self.forces[buf_ind][body2_idx][dim_idx] -= force_comp[dim_idx];
-                }
+                self.bodies[body_idx].vel[dim_idx] += timestep * force_buf[body_idx][dim_idx];
             }
         }
     }
@@ -126,17 +120,7 @@ impl BodySystem {
 impl BodySystem {
     #[wasm_bindgen]
     pub fn new(bodies: Vec<Body>) -> Self {
-        let num_bodies = bodies.len();
-
-        let mut body_system = BodySystem {
-            bodies: std::array::from_fn(|_| {
-                vec![Body::new_internal(0f32, [0f32; 3], [0f32; 3]); num_bodies]
-            }),
-            forces: std::array::from_fn(|_| vec![[0f32; 3]; num_bodies]),
-        };
-        body_system.bodies[0] = bodies;
-
-        body_system
+        BodySystem { bodies }
     }
 
     #[wasm_bindgen]
@@ -153,7 +137,7 @@ impl BodySystem {
 
     #[wasm_bindgen]
     pub fn get_bodies(&self) -> Vec<Body> {
-        self.bodies[0].clone()
+        self.bodies.clone()
     }
 }
 
