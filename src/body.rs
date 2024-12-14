@@ -110,7 +110,8 @@ impl BodySystem {
             }
 
             for dim_idx in 0..3 {
-                self.bodies[body_idx].vel[dim_idx] += timestep * force_buf[body_idx][dim_idx];
+                self.bodies[body_idx].vel[dim_idx] +=
+                    timestep * force_buf[body_idx][dim_idx] / self.bodies[body_idx].mass;
             }
         }
     }
