@@ -71,6 +71,7 @@ pub enum ForceMethod {
 #[derive(Debug, Clone, Copy)]
 pub enum StepMethod {
     Euler,
+    Rk4,
 }
 
 #[wasm_bindgen]
@@ -102,6 +103,7 @@ fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f32; 3]]) {
 impl BodySystem {
     fn step_bodies_euler(&mut self, timestep: f32, force_method: ForceMethod) {
         let mut force_buf = vec![[0f32; 3]; self.bodies.len()];
+
         get_forces(&self.bodies[..], &mut force_buf[..], force_method);
 
         for body_idx in 0..self.bodies.len() {
@@ -112,6 +114,74 @@ impl BodySystem {
             for dim_idx in 0..3 {
                 self.bodies[body_idx].vel[dim_idx] +=
                     timestep * force_buf[body_idx][dim_idx] / self.bodies[body_idx].mass;
+            }
+        }
+    }
+
+    fn step_bodies_rk4(&mut self, timestep: f32, force_method: ForceMethod) {
+        let mut force_buf: [Vec<[f32; 3]>; 4] =
+            core::array::from_fn(|_| vec![[0f32; 3]; self.bodies.len()]);
+        let mut body_buf: [Vec<Body>; 3] = core::array::from_fn(|_| self.bodies.clone());
+
+        get_forces(&self.bodies[..], &mut force_buf[0][..], force_method);
+
+        for body_idx in 0..self.bodies.len() {
+            for dim_idx in 0..3 {
+                body_buf[0][body_idx].pos[dim_idx] +=
+                    timestep / 2f32 * self.bodies[body_idx].vel[dim_idx];
+            }
+
+            for dim_idx in 0..3 {
+                body_buf[0][body_idx].vel[dim_idx] +=
+                    timestep / 2f32 * force_buf[0][body_idx][dim_idx] / self.bodies[body_idx].mass;
+            }
+        }
+
+        get_forces(&body_buf[0][..], &mut force_buf[1][..], force_method);
+
+        for body_idx in 0..self.bodies.len() {
+            for dim_idx in 0..3 {
+                body_buf[1][body_idx].pos[dim_idx] +=
+                    timestep / 2f32 * body_buf[0][body_idx].vel[dim_idx];
+            }
+
+            for dim_idx in 0..3 {
+                body_buf[1][body_idx].vel[dim_idx] +=
+                    timestep / 2f32 * force_buf[1][body_idx][dim_idx] / self.bodies[body_idx].mass;
+            }
+        }
+
+        get_forces(&body_buf[1][..], &mut force_buf[2][..], force_method);
+
+        for body_idx in 0..self.bodies.len() {
+            for dim_idx in 0..3 {
+                body_buf[2][body_idx].pos[dim_idx] += timestep * body_buf[1][body_idx].vel[dim_idx];
+            }
+
+            for dim_idx in 0..3 {
+                body_buf[2][body_idx].vel[dim_idx] +=
+                    timestep * force_buf[2][body_idx][dim_idx] / self.bodies[body_idx].mass;
+            }
+        }
+
+        get_forces(&body_buf[2][..], &mut force_buf[3][..], force_method);
+
+        for body_idx in 0..self.bodies.len() {
+            for dim_idx in 0..3 {
+                self.bodies[body_idx].pos[dim_idx] += timestep / 6f32
+                    * (self.bodies[body_idx].vel[dim_idx]
+                        + 2f32 * body_buf[0][body_idx].vel[dim_idx]
+                        + 2f32 * body_buf[1][body_idx].vel[dim_idx]
+                        + body_buf[2][body_idx].vel[dim_idx]);
+            }
+
+            for dim_idx in 0..3 {
+                self.bodies[body_idx].vel[dim_idx] += timestep / 6f32
+                    * (force_buf[0][body_idx][dim_idx]
+                        + 2f32 * force_buf[1][body_idx][dim_idx]
+                        + 2f32 * force_buf[2][body_idx][dim_idx]
+                        + force_buf[3][body_idx][dim_idx])
+                    / self.bodies[body_idx].mass;
             }
         }
     }
@@ -133,6 +203,7 @@ impl BodySystem {
     ) {
         match step_method {
             StepMethod::Euler => self.step_bodies_euler(timestep, force_method),
+            StepMethod::Rk4 => self.step_bodies_rk4(timestep, force_method),
         };
     }
 
@@ -182,7 +253,7 @@ mod tests {
     }
 
     macro_rules! add_step_testcase {
-        ($value:expr, $testname:ident) => {
+        ($testname:ident, $value:expr) => {
             #[test]
             fn $testname() {
                 let test_data: StepTestData = $value;
@@ -252,24 +323,47 @@ mod tests {
         };
     }
 
-    add_step_testcase!(
-        StepTestData {
-            input: StepTestInput {
-                bodies: vec![
-                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
-                ],
-                timestep: 0.01f32,
-                force_method: ForceMethod::Naive,
-                step_method: StepMethod::Euler,
-            },
-            output: StepTestOutput {
-                bodies: &[
-                    Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
-                ],
-            },
+    add_step_testcase!(test_euler_step, StepTestData {
+        input: StepTestInput {
+            bodies: vec![
+                Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
+                Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+            ],
+            timestep: 0.01f32,
+            force_method: ForceMethod::Naive,
+            step_method: StepMethod::Euler,
         },
-        test_euler_step
-    );
+        output: StepTestOutput {
+            bodies: &[
+                Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
+                Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
+            ],
+        },
+    });
+
+    add_step_testcase!(test_rk4_step, StepTestData {
+        input: StepTestInput {
+            bodies: vec![
+                Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
+                Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+            ],
+            timestep: 0.01f32,
+            force_method: ForceMethod::Naive,
+            step_method: StepMethod::Rk4,
+        },
+        output: StepTestOutput {
+            bodies: &[
+                Body::new_internal(2f32, [-0.00985195826043f32, 0f32, 0f32], [
+                    -0.97058349796f32,
+                    0f32,
+                    0f32
+                ]),
+                Body::new_internal(3f32, [1.00990130551f32, 0f32, 0f32], [
+                    0.98038899864f32,
+                    0f32,
+                    0f32
+                ]),
+            ],
+        },
+    });
 }
