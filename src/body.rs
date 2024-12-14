@@ -167,8 +167,8 @@ mod tests {
 
     #[test]
     fn test_euler_step() {
-        let body1 = Body::new_internal(1f32, [0f32; 3], [-1f32, 0f32, 0f32]);
-        let body2 = Body::new_internal(1f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32]);
+        let body1 = Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]);
+        let body2 = Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32]);
 
         let mut body_system = BodySystem::new(vec![body1, body2]);
 
@@ -177,8 +177,8 @@ mod tests {
         let result_bodies = body_system.get_bodies();
 
         const TARGET_BODIES: [Body; 2] = [
-            Body::new_internal(1f32, [-0.1f32, 0f32, 0f32], [-0.9f32, 0f32, 0f32]),
-            Body::new_internal(1f32, [1.1f32, 0f32, 0f32], [0.9f32, 0f32, 0f32]),
+            Body::new_internal(1f32, [-0.1f32, 0f32, 0f32], [-0.7f32, 0f32, 0f32]),
+            Body::new_internal(1f32, [1.1f32, 0f32, 0f32], [0.8f32, 0f32, 0f32]),
         ];
 
         for body_idx in 0..2 {
@@ -187,17 +187,23 @@ mod tests {
                     (result_bodies[body_idx].pos[dim_idx] - TARGET_BODIES[body_idx].pos[dim_idx])
                         .abs()
                         < EPS,
-                    "Incorrect position for body {}, dimension {}",
+                    "Incorrect position for body {}
+   result: {:?}
+ expected: {:?}",
                     body_idx + 1,
-                    dim_idx + 1
+                    result_bodies[body_idx],
+                    TARGET_BODIES[body_idx]
                 );
                 assert!(
                     (result_bodies[body_idx].vel[dim_idx] - TARGET_BODIES[body_idx].vel[dim_idx])
                         .abs()
                         < EPS,
-                    "Incorrect velocity for body {}, dimension {}",
+                    "Incorrect velocity for body {}
+   result: {:?}
+ expected: {:?}",
                     body_idx + 1,
-                    dim_idx + 1
+                    result_bodies[body_idx],
+                    TARGET_BODIES[body_idx],
                 );
             }
         }
