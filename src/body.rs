@@ -259,14 +259,14 @@ mod tests {
                     Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
                     Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
                 ],
-                timestep: 0.1f32,
+                timestep: 0.01f32,
                 force_method: ForceMethod::Naive,
                 step_method: StepMethod::Euler,
             },
             output: StepTestOutput {
                 bodies: &[
-                    Body::new_internal(2f32, [-0.1f32, 0f32, 0f32], [-0.7f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1.1f32, 0f32, 0f32], [0.8f32, 0f32, 0f32]),
+                    Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
                 ],
             },
         },
