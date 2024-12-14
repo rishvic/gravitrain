@@ -165,47 +165,111 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_euler_step() {
-        let body1 = Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]);
-        let body2 = Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32]);
-
-        let mut body_system = BodySystem::new(vec![body1, body2]);
-
-        body_system.step_bodies(0.1f32, ForceMethod::Naive, StepMethod::Euler);
-
-        let result_bodies = body_system.get_bodies();
-
-        const TARGET_BODIES: [Body; 2] = [
-            Body::new_internal(1f32, [-0.1f32, 0f32, 0f32], [-0.7f32, 0f32, 0f32]),
-            Body::new_internal(1f32, [1.1f32, 0f32, 0f32], [0.8f32, 0f32, 0f32]),
-        ];
-
-        for body_idx in 0..2 {
-            for dim_idx in 0..3 {
-                assert!(
-                    (result_bodies[body_idx].pos[dim_idx] - TARGET_BODIES[body_idx].pos[dim_idx])
-                        .abs()
-                        < EPS,
-                    "Incorrect position for body {}
-   result: {:?}
- expected: {:?}",
-                    body_idx + 1,
-                    result_bodies[body_idx],
-                    TARGET_BODIES[body_idx]
-                );
-                assert!(
-                    (result_bodies[body_idx].vel[dim_idx] - TARGET_BODIES[body_idx].vel[dim_idx])
-                        .abs()
-                        < EPS,
-                    "Incorrect velocity for body {}
-   result: {:?}
- expected: {:?}",
-                    body_idx + 1,
-                    result_bodies[body_idx],
-                    TARGET_BODIES[body_idx],
-                );
-            }
-        }
+    struct StepTestInput {
+        bodies: Vec<Body>,
+        timestep: f32,
+        force_method: ForceMethod,
+        step_method: StepMethod,
     }
+
+    struct StepTestOutput<'a> {
+        bodies: &'a [Body],
+    }
+
+    struct StepTestData<'a> {
+        input: StepTestInput,
+        output: StepTestOutput<'a>,
+    }
+
+    macro_rules! add_step_testcase {
+        ($value:expr, $testname:ident) => {
+            #[test]
+            fn $testname() {
+                let test_data: StepTestData = $value;
+
+                assert_eq!(
+                    test_data.input.bodies.len(),
+                    test_data.output.bodies.len(),
+                    "Invalid test data; expected same number of bodies"
+                );
+
+                for body_idx in 0..test_data.output.bodies.len() {
+                    assert_eq!(
+                        test_data.input.bodies[body_idx].mass,
+                        test_data.output.bodies[body_idx].mass,
+                        "Invalid test data; expected same mass for input and output"
+                    );
+                }
+
+                let mut body_system = BodySystem::new(test_data.input.bodies);
+
+                body_system.step_bodies(
+                    test_data.input.timestep,
+                    test_data.input.force_method,
+                    test_data.input.step_method,
+                );
+
+                let result_bodies = body_system.get_bodies();
+                assert_eq!(
+                    result_bodies.len(),
+                    test_data.output.bodies.len(),
+                    "Did not get same number of bodies in result"
+                );
+
+                for body_idx in 0..test_data.output.bodies.len() {
+                    assert_eq!(
+                        result_bodies[body_idx].mass, test_data.output.bodies[body_idx].mass,
+                        "Different mass in result bodies"
+                    );
+                    for dim_idx in 0..3 {
+                        assert!(
+                            (result_bodies[body_idx].pos[dim_idx]
+                                - test_data.output.bodies[body_idx].pos[dim_idx])
+                                .abs()
+                                < EPS,
+                            "Incorrect position for body {}
+   result: {:?}
+ expected: {:?}",
+                            body_idx + 1,
+                            result_bodies[body_idx],
+                            test_data.output.bodies[body_idx]
+                        );
+                        assert!(
+                            (result_bodies[body_idx].vel[dim_idx]
+                                - test_data.output.bodies[body_idx].vel[dim_idx])
+                                .abs()
+                                < EPS,
+                            "Incorrect velocity for body {}
+   result: {:?}
+ expected: {:?}",
+                            body_idx + 1,
+                            result_bodies[body_idx],
+                            test_data.output.bodies[body_idx],
+                        );
+                    }
+                }
+            }
+        };
+    }
+
+    add_step_testcase!(
+        StepTestData {
+            input: StepTestInput {
+                bodies: vec![
+                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+                ],
+                timestep: 0.1f32,
+                force_method: ForceMethod::Naive,
+                step_method: StepMethod::Euler,
+            },
+            output: StepTestOutput {
+                bodies: &[
+                    Body::new_internal(2f32, [-0.1f32, 0f32, 0f32], [-0.7f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1.1f32, 0f32, 0f32], [0.8f32, 0f32, 0f32]),
+                ],
+            },
+        },
+        test_euler_step
+    );
 }
