@@ -3,6 +3,8 @@ name = "gravitrain"
 version = "0.1.2-alpha"
 edition = "2021"
 license = "Apache-2.0"
+description = "A pet project for gravity simulation in Rust."
+repository = "https://github.com/rishvic/gravitrain"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
