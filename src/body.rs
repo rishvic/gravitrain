@@ -17,7 +17,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub struct Body {
-    mass: f32,
+    pub mass: f32,
     pos: [f32; 3],
     vel: [f32; 3],
 }
@@ -58,6 +58,16 @@ impl Body {
         body.vel.copy_from_slice(&vel[..3]);
 
         body
+    }
+
+    #[wasm_bindgen]
+    pub fn get_pos(&self, dim: usize) -> f32 {
+        self.pos[dim]
+    }
+
+    #[wasm_bindgen]
+    pub fn get_vel(&self, dim: usize) -> f32 {
+        self.vel[dim]
     }
 }
 
@@ -323,47 +333,53 @@ mod tests {
         };
     }
 
-    add_step_testcase!(test_euler_step, StepTestData {
-        input: StepTestInput {
-            bodies: vec![
-                Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
-                Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
-            ],
-            timestep: 0.01f32,
-            force_method: ForceMethod::Naive,
-            step_method: StepMethod::Euler,
-        },
-        output: StepTestOutput {
-            bodies: &[
-                Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
-                Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
-            ],
-        },
-    });
+    add_step_testcase!(
+        test_euler_step,
+        StepTestData {
+            input: StepTestInput {
+                bodies: vec![
+                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+                ],
+                timestep: 0.01f32,
+                force_method: ForceMethod::Naive,
+                step_method: StepMethod::Euler,
+            },
+            output: StepTestOutput {
+                bodies: &[
+                    Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
+                ],
+            },
+        }
+    );
 
-    add_step_testcase!(test_rk4_step, StepTestData {
-        input: StepTestInput {
-            bodies: vec![
-                Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
-                Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
-            ],
-            timestep: 0.01f32,
-            force_method: ForceMethod::Naive,
-            step_method: StepMethod::Rk4,
-        },
-        output: StepTestOutput {
-            bodies: &[
-                Body::new_internal(2f32, [-0.00985195826043f32, 0f32, 0f32], [
-                    -0.97058349796f32,
-                    0f32,
-                    0f32
-                ]),
-                Body::new_internal(3f32, [1.00990130551f32, 0f32, 0f32], [
-                    0.98038899864f32,
-                    0f32,
-                    0f32
-                ]),
-            ],
-        },
-    });
+    add_step_testcase!(
+        test_rk4_step,
+        StepTestData {
+            input: StepTestInput {
+                bodies: vec![
+                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
+                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+                ],
+                timestep: 0.01f32,
+                force_method: ForceMethod::Naive,
+                step_method: StepMethod::Rk4,
+            },
+            output: StepTestOutput {
+                bodies: &[
+                    Body::new_internal(
+                        2f32,
+                        [-0.00985195826043f32, 0f32, 0f32],
+                        [-0.97058349796f32, 0f32, 0f32]
+                    ),
+                    Body::new_internal(
+                        3f32,
+                        [1.00990130551f32, 0f32, 0f32],
+                        [0.98038899864f32, 0f32, 0f32]
+                    ),
+                ],
+            },
+        }
+    );
 }
