@@ -355,6 +355,53 @@ mod tests {
     );
 
     add_step_testcase!(
+        test_euler_step_2,
+        StepTestData {
+            input: StepTestInput {
+                bodies: vec![
+                    Body::new_internal(
+                        5.54f32,
+                        [-0.3f32, -0.16f32, 0.06f32],
+                        [0.62f32, 0.85f32, -0.13f32]
+                    ),
+                    Body::new_internal(
+                        6.34f32,
+                        [0.3f32, -0.94f32, -0.28f32],
+                        [-0.29f32, -0.25f32, 0.08f32]
+                    ),
+                    Body::new_internal(
+                        6.6f32,
+                        [-0.34f32, -0.81f32, 0.91f32],
+                        [-0.18f32, 0.82f32, -0.27f32]
+                    )
+                ],
+                timestep: 0.01f32,
+                force_method: ForceMethod::Naive,
+                step_method: StepMethod::Euler,
+            },
+            output: StepTestOutput {
+                bodies: &[
+                    Body::new_internal(
+                        5.54f32,
+                        [-0.2938f32, -0.1515f32, 0.0587f32],
+                        [0.651554939425f32, 0.77124194633f32, -0.103407095465f32]
+                    ),
+                    Body::new_internal(
+                        6.34f32,
+                        [0.2971f32, -0.9425f32, -0.2792f32],
+                        [-0.336340120551f32, -0.208281829426f32, 0.128090614184f32]
+                    ),
+                    Body::new_internal(
+                        6.6f32,
+                        [-0.3418f32, -0.8018f32, 0.9073f32],
+                        [-0.161972424261f32, 0.846034305438f32, -0.33851805834f32]
+                    )
+                ],
+            },
+        }
+    );
+
+    add_step_testcase!(
         test_rk4_step,
         StepTestData {
             input: StepTestInput {
