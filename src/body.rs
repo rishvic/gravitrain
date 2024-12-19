@@ -28,8 +28,8 @@ impl Body {
     }
 
     pub fn gravity_force(&self, other: &Body) -> [f32; 3] {
-        let mut disp = [0f32; 3];
-        let mut dist_sqr = 0f32;
+        let mut disp = [0.0; 3];
+        let mut dist_sqr = 0.0;
         for dim_idx in 0..3 {
             disp[dim_idx] = other.pos[dim_idx] - self.pos[dim_idx];
             dist_sqr += disp[dim_idx] * disp[dim_idx];
@@ -50,8 +50,8 @@ impl Body {
     pub fn new(mass: f32, pos: Vec<f32>, vel: Vec<f32>) -> Self {
         let mut body = Body {
             mass,
-            pos: [0f32; 3],
-            vel: [0f32; 3],
+            pos: [0.0; 3],
+            vel: [0.0; 3],
         };
 
         body.pos.copy_from_slice(&pos[..3]);
@@ -112,7 +112,7 @@ fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f32; 3]]) {
 
 impl BodySystem {
     fn step_bodies_euler(&mut self, timestep: f32, force_method: ForceMethod) {
-        let mut force_buf = vec![[0f32; 3]; self.bodies.len()];
+        let mut force_buf = vec![[0.0; 3]; self.bodies.len()];
 
         get_forces(&self.bodies[..], &mut force_buf[..], force_method);
 
@@ -130,7 +130,7 @@ impl BodySystem {
 
     fn step_bodies_rk4(&mut self, timestep: f32, force_method: ForceMethod) {
         let mut force_buf: [Vec<[f32; 3]>; 4] =
-            core::array::from_fn(|_| vec![[0f32; 3]; self.bodies.len()]);
+            core::array::from_fn(|_| vec![[0.0; 3]; self.bodies.len()]);
         let mut body_buf: [Vec<Body>; 3] = core::array::from_fn(|_| self.bodies.clone());
 
         get_forces(&self.bodies[..], &mut force_buf[0][..], force_method);
@@ -138,12 +138,12 @@ impl BodySystem {
         for body_idx in 0..self.bodies.len() {
             for dim_idx in 0..3 {
                 body_buf[0][body_idx].pos[dim_idx] +=
-                    timestep / 2f32 * self.bodies[body_idx].vel[dim_idx];
+                    timestep / 2.0 * self.bodies[body_idx].vel[dim_idx];
             }
 
             for dim_idx in 0..3 {
                 body_buf[0][body_idx].vel[dim_idx] +=
-                    timestep / 2f32 * force_buf[0][body_idx][dim_idx] / self.bodies[body_idx].mass;
+                    timestep / 2.0 * force_buf[0][body_idx][dim_idx] / self.bodies[body_idx].mass;
             }
         }
 
@@ -152,12 +152,12 @@ impl BodySystem {
         for body_idx in 0..self.bodies.len() {
             for dim_idx in 0..3 {
                 body_buf[1][body_idx].pos[dim_idx] +=
-                    timestep / 2f32 * body_buf[0][body_idx].vel[dim_idx];
+                    timestep / 2.0 * body_buf[0][body_idx].vel[dim_idx];
             }
 
             for dim_idx in 0..3 {
                 body_buf[1][body_idx].vel[dim_idx] +=
-                    timestep / 2f32 * force_buf[1][body_idx][dim_idx] / self.bodies[body_idx].mass;
+                    timestep / 2.0 * force_buf[1][body_idx][dim_idx] / self.bodies[body_idx].mass;
             }
         }
 
@@ -178,18 +178,18 @@ impl BodySystem {
 
         for body_idx in 0..self.bodies.len() {
             for dim_idx in 0..3 {
-                self.bodies[body_idx].pos[dim_idx] += timestep / 6f32
+                self.bodies[body_idx].pos[dim_idx] += timestep / 6.0
                     * (self.bodies[body_idx].vel[dim_idx]
-                        + 2f32 * body_buf[0][body_idx].vel[dim_idx]
-                        + 2f32 * body_buf[1][body_idx].vel[dim_idx]
+                        + 2.0 * body_buf[0][body_idx].vel[dim_idx]
+                        + 2.0 * body_buf[1][body_idx].vel[dim_idx]
                         + body_buf[2][body_idx].vel[dim_idx]);
             }
 
             for dim_idx in 0..3 {
-                self.bodies[body_idx].vel[dim_idx] += timestep / 6f32
+                self.bodies[body_idx].vel[dim_idx] += timestep / 6.0
                     * (force_buf[0][body_idx][dim_idx]
-                        + 2f32 * force_buf[1][body_idx][dim_idx]
-                        + 2f32 * force_buf[2][body_idx][dim_idx]
+                        + 2.0 * force_buf[1][body_idx][dim_idx]
+                        + 2.0 * force_buf[2][body_idx][dim_idx]
                         + force_buf[3][body_idx][dim_idx])
                     / self.bodies[body_idx].mass;
             }
@@ -227,15 +227,15 @@ impl BodySystem {
 mod tests {
     use super::*;
 
-    const EPS: f32 = 1e-6f32;
+    const EPS: f32 = 1e-6;
 
     #[test]
     fn test_force_calculation() {
-        let body1 = Body::new_internal(1f32, [0f32; 3], [0f32; 3]);
-        let body2 = Body::new_internal(2f32, [5f32, 0f32, 0f32], [0f32; 3]);
+        let body1 = Body::new_internal(1.0, [0.0; 3], [0.0; 3]);
+        let body2 = Body::new_internal(2.0, [5.0, 0.0, 0.0], [0.0; 3]);
         let force = body1.gravity_force(&body2);
 
-        const TARGET_FORCE: [f32; 3] = [0.08f32, 0f32, 0f32];
+        const TARGET_FORCE: [f32; 3] = [0.08, 0.0, 0.0];
 
         for i in 0..3 {
             assert!(
@@ -338,17 +338,17 @@ mod tests {
         StepTestData {
             input: StepTestInput {
                 bodies: vec![
-                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+                    Body::new_internal(2.0, [0.0; 3], [-1.0, 0.0, 0.0]),
+                    Body::new_internal(3.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0])
                 ],
-                timestep: 0.01f32,
+                timestep: 0.01,
                 force_method: ForceMethod::Naive,
                 step_method: StepMethod::Euler,
             },
             output: StepTestOutput {
                 bodies: &[
-                    Body::new_internal(2f32, [-0.01f32, 0f32, 0f32], [-0.97f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1.01f32, 0f32, 0f32], [0.98f32, 0f32, 0f32]),
+                    Body::new_internal(2.0, [-0.01, 0.0, 0.0], [-0.97, 0.0, 0.0]),
+                    Body::new_internal(3.0, [1.01, 0.0, 0.0], [0.98, 0.0, 0.0]),
                 ],
             },
         }
@@ -359,42 +359,30 @@ mod tests {
         StepTestData {
             input: StepTestInput {
                 bodies: vec![
-                    Body::new_internal(
-                        5.54f32,
-                        [-0.3f32, -0.16f32, 0.06f32],
-                        [0.62f32, 0.85f32, -0.13f32]
-                    ),
-                    Body::new_internal(
-                        6.34f32,
-                        [0.3f32, -0.94f32, -0.28f32],
-                        [-0.29f32, -0.25f32, 0.08f32]
-                    ),
-                    Body::new_internal(
-                        6.6f32,
-                        [-0.34f32, -0.81f32, 0.91f32],
-                        [-0.18f32, 0.82f32, -0.27f32]
-                    )
+                    Body::new_internal(5.54, [-0.3, -0.16, 0.06], [0.62, 0.85, -0.13]),
+                    Body::new_internal(6.34, [0.3, -0.94, -0.28], [-0.29, -0.25, 0.08]),
+                    Body::new_internal(6.6, [-0.34, -0.81, 0.91], [-0.18, 0.82, -0.27])
                 ],
-                timestep: 0.01f32,
+                timestep: 0.01,
                 force_method: ForceMethod::Naive,
                 step_method: StepMethod::Euler,
             },
             output: StepTestOutput {
                 bodies: &[
                     Body::new_internal(
-                        5.54f32,
-                        [-0.2938f32, -0.1515f32, 0.0587f32],
-                        [0.651554939425f32, 0.77124194633f32, -0.103407095465f32]
+                        5.54,
+                        [-0.2938, -0.1515, 0.0587],
+                        [0.651554939425, 0.77124194633, -0.103407095465]
                     ),
                     Body::new_internal(
-                        6.34f32,
-                        [0.2971f32, -0.9425f32, -0.2792f32],
-                        [-0.336340120551f32, -0.208281829426f32, 0.128090614184f32]
+                        6.34,
+                        [0.2971, -0.9425, -0.2792],
+                        [-0.336340120551, -0.208281829426, 0.128090614184]
                     ),
                     Body::new_internal(
-                        6.6f32,
-                        [-0.3418f32, -0.8018f32, 0.9073f32],
-                        [-0.161972424261f32, 0.846034305438f32, -0.33851805834f32]
+                        6.6,
+                        [-0.3418, -0.8018, 0.9073],
+                        [-0.161972424261, 0.846034305438, -0.33851805834]
                     )
                 ],
             },
@@ -406,25 +394,21 @@ mod tests {
         StepTestData {
             input: StepTestInput {
                 bodies: vec![
-                    Body::new_internal(2f32, [0f32; 3], [-1f32, 0f32, 0f32]),
-                    Body::new_internal(3f32, [1f32, 0f32, 0f32], [1f32, 0f32, 0f32])
+                    Body::new_internal(2.0, [0.0; 3], [-1.0, 0.0, 0.0]),
+                    Body::new_internal(3.0, [1.0, 0.0, 0.0], [1.0, 0.0, 0.0])
                 ],
-                timestep: 0.01f32,
+                timestep: 0.01,
                 force_method: ForceMethod::Naive,
                 step_method: StepMethod::Rk4,
             },
             output: StepTestOutput {
                 bodies: &[
                     Body::new_internal(
-                        2f32,
-                        [-0.00985195826043f32, 0f32, 0f32],
-                        [-0.97058349796f32, 0f32, 0f32]
+                        2.0,
+                        [-0.00985195826043, 0.0, 0.0],
+                        [-0.97058349796, 0.0, 0.0]
                     ),
-                    Body::new_internal(
-                        3f32,
-                        [1.00990130551f32, 0f32, 0f32],
-                        [0.98038899864f32, 0f32, 0f32]
-                    ),
+                    Body::new_internal(3.0, [1.00990130551, 0.0, 0.0], [0.98038899864, 0.0, 0.0]),
                 ],
             },
         }
