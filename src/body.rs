@@ -17,17 +17,17 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub struct Body {
-    pub mass: f32,
-    pos: [f32; 3],
-    vel: [f32; 3],
+    pub mass: f64,
+    pos: [f64; 3],
+    vel: [f64; 3],
 }
 
 impl Body {
-    pub const fn new_internal(mass: f32, pos: [f32; 3], vel: [f32; 3]) -> Self {
+    pub const fn new_internal(mass: f64, pos: [f64; 3], vel: [f64; 3]) -> Self {
         Body { mass, pos, vel }
     }
 
-    pub fn gravity_force(&self, other: &Body) -> [f32; 3] {
+    pub fn gravity_force(&self, other: &Body) -> [f64; 3] {
         let mut disp = [0.0; 3];
         let mut dist_sqr = 0.0;
         for dim_idx in 0..3 {
@@ -47,7 +47,7 @@ impl Body {
 #[wasm_bindgen]
 impl Body {
     #[wasm_bindgen]
-    pub fn new(mass: f32, pos: Vec<f32>, vel: Vec<f32>) -> Self {
+    pub fn new(mass: f64, pos: Vec<f64>, vel: Vec<f64>) -> Self {
         let mut body = Body {
             mass,
             pos: [0.0; 3],
@@ -61,12 +61,12 @@ impl Body {
     }
 
     #[wasm_bindgen]
-    pub fn get_pos(&self, dim: usize) -> f32 {
+    pub fn get_pos(&self, dim: usize) -> f64 {
         self.pos[dim]
     }
 
     #[wasm_bindgen]
-    pub fn get_vel(&self, dim: usize) -> f32 {
+    pub fn get_vel(&self, dim: usize) -> f64 {
         self.vel[dim]
     }
 }
@@ -90,13 +90,13 @@ pub struct BodySystem {
     bodies: Vec<Body>,
 }
 
-fn get_forces(bodies: &[Body], force_buf: &mut [[f32; 3]], method: ForceMethod) {
+fn get_forces(bodies: &[Body], force_buf: &mut [[f64; 3]], method: ForceMethod) {
     match method {
         ForceMethod::Naive => get_forces_naive(bodies, force_buf),
     };
 }
 
-fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f32; 3]]) {
+fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f64; 3]]) {
     let num_bodies = bodies.len();
     for body1_idx in 0..num_bodies {
         for body2_idx in body1_idx + 1..num_bodies {
@@ -111,7 +111,7 @@ fn get_forces_naive(bodies: &[Body], force_buf: &mut [[f32; 3]]) {
 }
 
 impl BodySystem {
-    fn step_bodies_euler(&mut self, timestep: f32, force_method: ForceMethod) {
+    fn step_bodies_euler(&mut self, timestep: f64, force_method: ForceMethod) {
         let mut force_buf = vec![[0.0; 3]; self.bodies.len()];
 
         get_forces(&self.bodies[..], &mut force_buf[..], force_method);
@@ -128,8 +128,8 @@ impl BodySystem {
         }
     }
 
-    fn step_bodies_rk4(&mut self, timestep: f32, force_method: ForceMethod) {
-        let mut force_buf: [Vec<[f32; 3]>; 4] =
+    fn step_bodies_rk4(&mut self, timestep: f64, force_method: ForceMethod) {
+        let mut force_buf: [Vec<[f64; 3]>; 4] =
             core::array::from_fn(|_| vec![[0.0; 3]; self.bodies.len()]);
         let mut body_buf: [Vec<Body>; 3] = core::array::from_fn(|_| self.bodies.clone());
 
@@ -207,7 +207,7 @@ impl BodySystem {
     #[wasm_bindgen]
     pub fn step_bodies(
         &mut self,
-        timestep: f32,
+        timestep: f64,
         force_method: ForceMethod,
         step_method: StepMethod,
     ) {
@@ -227,7 +227,7 @@ impl BodySystem {
 mod tests {
     use super::*;
 
-    const EPS: f32 = 1e-6;
+    const EPS: f64 = 1e-6;
 
     #[test]
     fn test_force_calculation() {
@@ -235,7 +235,7 @@ mod tests {
         let body2 = Body::new_internal(2.0, [5.0, 0.0, 0.0], [0.0; 3]);
         let force = body1.gravity_force(&body2);
 
-        const TARGET_FORCE: [f32; 3] = [0.08, 0.0, 0.0];
+        const TARGET_FORCE: [f64; 3] = [0.08, 0.0, 0.0];
 
         for i in 0..3 {
             assert!(
@@ -248,7 +248,7 @@ mod tests {
 
     struct StepTestInput {
         bodies: Vec<Body>,
-        timestep: f32,
+        timestep: f64,
         force_method: ForceMethod,
         step_method: StepMethod,
     }
